@@ -3,14 +3,13 @@ import {
   SubscribeMessage,
   MessageBody,
   WebSocketServer,
-  ConnectedSocket,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { ChatService } from './chat.service';
 
 @WebSocketGateway({
   cors: {
-    origin: 'http://localhost:5173', // Port de Vite par défaut
+    origin: 'http://localhost:5173',
     credentials: true,
   },
 })
@@ -36,10 +35,7 @@ export class ChatGateway {
 
   // Recevoir un message du client
   @SubscribeMessage('msg_to_server')
-  async handleMessage(
-    @MessageBody() data: { user: string; text: string },
-    @ConnectedSocket() client: Socket,
-  ) {
+  async handleMessage(@MessageBody() data: { user: string; text: string }) {
     console.log('Message reçu:', data);
 
     // Sauvegarder dans MongoDB

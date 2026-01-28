@@ -7,7 +7,7 @@ export class Message extends Document {
   text: string;
 
   @Prop()
-  user: string; // 👈 On remplace "sender" par "user" pour être cohérent
+  user: string;
 
   @Prop({ default: Date.now })
   createdAt: Date;
