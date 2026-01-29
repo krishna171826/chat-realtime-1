@@ -2,14 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { io } from 'socket.io-client';
 import '../styles/ChatPage.css';
 
-// Connexion au tunnel (LocalTunnel ou Ngrok)
-const socket = io(process.env.REACT_APP_BACKEND_URL || 'http://localhost:3000', { 
-  transports: ['websocket'],
-  // Ce header évite les blocages sur certains tunnels
-  extraHeaders: {
-    "bypass-tunnel-reminder": "true" 
-  }
-});
+let socket;
 
 function ChatPage() {
   const [message, setMessage] = useState('');
@@ -19,22 +12,61 @@ function ChatPage() {
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
-    // SE SOUVENIR DE MOI
+    // On récupère STRICTEMENT la variable Vercel
+    const backendUrl = process.env.REACT_APP_BACKEND_URL;
+    
+    console.log("--- TENTATIVE DE CONNEXION ---");
+    console.log("URL utilisée :", backendUrl);
+
+    if (!backendUrl) {
+      console.error("ERREUR : La variable REACT_APP_BACKEND_URL est vide sur Vercel !");
+      return;
+    }
+
+    if (!socket) {
+      socket = io(backendUrl, { 
+        transports: ['websocket'],
+        upgrade: false,
+        extraHeaders: {
+          "ngrok-skip-browser-warning": "true",
+          "bypass-tunnel-reminder": "true"
+        }
+      });
+    }
+
+    // 3. GESTION DU LOGIN AUTOMATIQUE
     const savedName = localStorage.getItem('chat-user');
     if (savedName) {
       setUserName(savedName);
       setIsLogged(true);
     }
 
-    socket.on('message_history', (history) => setChat(history));
-    socket.on('msg_to_client', (payload) => setChat(prev => [...prev, payload]));
+    // 4. ÉCOUTEURS D'ÉVÉNEMENTS
+    socket.on('connect', () => {
+      console.log("✅ Connecté au serveur Socket.io ! ID:", socket.id);
+    });
+
+    socket.on('connect_error', (err) => {
+      console.error("❌ Erreur de connexion au socket :", err.message);
+    });
+
+    socket.on('message_history', (history) => {
+      setChat(history);
+    });
+
+    socket.on('msg_to_client', (payload) => {
+      setChat(prev => [...prev, payload]);
+    });
     
     return () => { 
       socket.off('message_history'); 
-      socket.off('msg_to_client'); 
+      socket.off('msg_to_client');
+      socket.off('connect');
+      socket.off('connect_error');
     };
   }, []);
 
+  // Scroll automatique
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [chat]);
@@ -47,7 +79,6 @@ function ChatPage() {
     }
   };
 
-  // CHANGER DE NOM
   const handleLogout = () => {
     localStorage.removeItem('chat-user');
     window.location.reload(); 
@@ -55,11 +86,13 @@ function ChatPage() {
 
   const sendMessage = (e) => {
     e.preventDefault();
-    if (message.trim()) {
+    if (message.trim() && socket) {
       socket.emit('msg_to_server', { user: userName, text: message });
       setMessage('');
     }
   };
+
+  // --- RENDU UI ---
 
   if (!isLogged) {
     return (
@@ -92,7 +125,11 @@ function ChatPage() {
         <div ref={messagesEndRef} />
       </div>
       <form onSubmit={sendMessage} className="chat-input-area">
-        <input value={message} onChange={e => setMessage(e.target.value)} placeholder="Ecrivez ici..." />
+        <input 
+          value={message} 
+          onChange={e => setMessage(e.target.value)} 
+          placeholder="Ecrivez ici..." 
+        />
         <button type="submit" className="send-btn">➤</button>
       </form>
     </div>

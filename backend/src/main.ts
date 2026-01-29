@@ -12,7 +12,8 @@ async function bootstrap() {
     credentials: true,
   });
   
-  // 3. On lance le serveur sur toutes les interfaces réseau
-  await app.listen(process.env.PORT ?? 3000, '0.0.0.0');
+// Dans main.ts
+await app.listen(5000, '0.0.0.0'); 
+console.log("Le serveur tourne sur http://localhost:5000");
 }
 bootstrap();
