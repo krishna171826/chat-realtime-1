@@ -3,16 +3,16 @@ import {
   SubscribeMessage,
   MessageBody,
   WebSocketServer,
-  ConnectedSocket,
   OnGatewayConnection,
   OnGatewayDisconnect,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { ChatService } from './chat.service';
+import { WorkerPoolService } from './worker-pool.service';
 
 @WebSocketGateway({
   cors: {
-    origin: 'http://localhost:5173', // Ton React
+    origin: 'http://localhost:5173',
     methods: ['GET', 'POST'],
     credentials: true,
   },
@@ -21,45 +21,57 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;
 
-  constructor(private readonly chatService: ChatService) {}
+  constructor(
+    private readonly chatService: ChatService,
+    private readonly workerPool: WorkerPoolService,
+  ) {}
 
-  // Quand un client se connecte
   async handleConnection(client: Socket) {
     console.log(`✅ Client connecté : ${client.id}`);
     try {
-      // Envoyer l'historique des messages au nouveau client
       const messages = await this.chatService.getAllMessages();
       client.emit('message_history', messages);
     } catch (error) {
-      console.error("Erreur lors de la récupération de l'historique:", error);
+      console.error('Erreur historique:', error);
     }
   }
 
-  // Quand un client se déconnecte
   handleDisconnect(client: Socket) {
     console.log(`❌ Client déconnecté : ${client.id}`);
   }
 
-  // Recevoir un message du client
   @SubscribeMessage('msg_to_server')
-  async handleMessage(
-    @MessageBody() data: { user: string; text: string },
-    @ConnectedSocket() client: Socket,
-  ) {
-    console.log('📩 Message reçu du client:', data);
+  async handleMessage(@MessageBody() data: { user: string; text: string }) {
+    console.log('📩 Message brut reçu:', data);
 
-    // Sauvegarder dans MongoDB
-    const savedMessage = await this.chatService.createMessage(
-      data.user,
-      data.text,
-    );
+    try {
+      // 1. Traitement via Worker Threads
+      const processedData = await this.workerPool.processTask({
+        user: data.user,
+        text: data.text,
+      });
 
-    // Envoyer à TOUS les clients connectés (broadcast)
-    this.server.emit('msg_to_client', {
-      _id: savedMessage._id,
-      user: savedMessage.user,
-      text: savedMessage.text,
-      createdAt: savedMessage.createdAt,
-    });
+      // 2. Log pour vérifier le multithreading
+      console.log(
+        `⚙️  Message traité par le Worker #${processedData.workerId} :`,
+        processedData,
+      );
+
+      // 3. Sauvegarde en BDD
+      const savedMessage = await this.chatService.createMessage(
+        processedData.user,
+        processedData.text,
+      );
+
+      // 4. Envoi à tout le monde
+      this.server.emit('msg_to_client', {
+        _id: savedMessage._id,
+        user: savedMessage.user,
+        text: savedMessage.text,
+        createdAt: savedMessage.createdAt,
+      });
+    } catch (error) {
+      console.error('Erreur traitement worker:', error);
+    }
   }
 }

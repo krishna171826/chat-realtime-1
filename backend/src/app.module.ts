@@ -4,8 +4,7 @@ import { ChatModule } from './chat/chat.module';
 
 @Module({
   imports: [
-    MongooseModule.forRoot(
-      'mongodb://localhost:27017/chatdb?authSource=admin',),
+    MongooseModule.forRoot('mongodb://localhost:27017/chatdb?authSource=admin'),
     ChatModule,
   ],
 })
