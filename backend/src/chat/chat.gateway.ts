@@ -12,7 +12,7 @@ import { ChatService } from './chat.service';
 
 @WebSocketGateway({
   cors: {
-    origin: 'http://localhost:5173', // Ton React
+    origin: '*', // CHANGÉ : Autorise Ngrok et ton iPhone
     methods: ['GET', 'POST'],
     credentials: true,
   },
@@ -23,43 +23,45 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   constructor(private readonly chatService: ChatService) {}
 
-  // Quand un client se connecte
   async handleConnection(client: Socket) {
     console.log(`✅ Client connecté : ${client.id}`);
     try {
-      // Envoyer l'historique des messages au nouveau client
       const messages = await this.chatService.getAllMessages();
       client.emit('message_history', messages);
     } catch (error) {
-      console.error("Erreur lors de la récupération de l'historique:", error);
+      console.error("Erreur historique:", error);
     }
   }
 
-  // Quand un client se déconnecte
   handleDisconnect(client: Socket) {
     console.log(`❌ Client déconnecté : ${client.id}`);
   }
 
-  // Recevoir un message du client
   @SubscribeMessage('msg_to_server')
   async handleMessage(
     @MessageBody() data: { user: string; text: string },
     @ConnectedSocket() client: Socket,
   ) {
-    console.log('📩 Message reçu du client:', data);
+    console.log('📩 Message reçu, envoi au Worker Thread...');
 
-    // Sauvegarder dans MongoDB
+    // 1. APPEL AU WORKER THREAD
+    // Le serveur ne "bloque" pas ici, il attend que l'assistant finisse
+    const processedText = await this.chatService.processWithWorker(data.text);
+
+    // 2. SAUVEGARDE EN BASE (avec le texte modifié par le worker)
     const savedMessage = await this.chatService.createMessage(
       data.user,
-      data.text,
+      processedText,
     );
 
-    // Envoyer à TOUS les clients connectés (broadcast)
+    // 3. ENVOI À TOUT LE MONDE
     this.server.emit('msg_to_client', {
       _id: savedMessage._id,
       user: savedMessage.user,
       text: savedMessage.text,
       createdAt: savedMessage.createdAt,
     });
+    
+    console.log('✅ Message traité et diffusé');
   }
 }

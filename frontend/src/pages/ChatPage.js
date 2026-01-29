@@ -2,7 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { io } from 'socket.io-client';
 import '../styles/ChatPage.css';
 
-const socket = io('http://localhost:3000', { transports: ['websocket'] });
+// Il va chercher la variable Vercel, et si elle n'existe pas, il prend localhost par défaut
+const socket = io(process.env.REACT_APP_BACKEND_URL || 'http://localhost:3000', { 
+  transports: ['websocket'] 
+});
 
 function ChatPage() {
   const [message, setMessage] = useState('');
