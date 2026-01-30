@@ -52,10 +52,10 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       });
 
       // 2. Log pour vérifier le multithreading
-      console.log(
-        `⚙️  Message traité par le Worker #${processedData.workerId} :`,
-        processedData,
-      );
+      //console.log(
+      // `⚙️  Message traité par le Worker #${processedData.workerId} :`,
+      // processedData,
+     // );
 
       // 3. Sauvegarde en BDD
       const savedMessage = await this.chatService.createMessage(

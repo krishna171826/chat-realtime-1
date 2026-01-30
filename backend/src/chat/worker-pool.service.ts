@@ -21,9 +21,8 @@ export class WorkerPoolService implements OnModuleDestroy {
   private taskMap = new Map<Worker, (res: WorkerResult) => void>();
 
   constructor() {
-    const poolSize = 4; // Nombre de threads simultanés
+    const poolSize = 5;
 
-    // En prod (NestJS), on cherche le fichier compilé .js
     const workerPath = path.resolve(__dirname, './worker.js');
 
     for (let i = 0; i < poolSize; i++) {
