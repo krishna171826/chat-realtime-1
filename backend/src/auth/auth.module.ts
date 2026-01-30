@@ -10,7 +10,7 @@ import { JwtStrategy } from './jwt.strategy';
   imports: [
     MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
     JwtModule.register({
-      secret: 'your_jwt_secret',
+      secret: process.env.JWT_SECRET || 'your_jwt_secret',
       signOptions: { expiresIn: '1d' },
     }),
   ],
