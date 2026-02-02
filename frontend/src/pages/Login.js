@@ -12,8 +12,7 @@ export default function Login() {
     e.preventDefault();
     setError('');
     try {
-  // On récupère l'URL depuis les variables d'environnement, sinon on utilise localhost par défaut
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://46.224.42.239:5000';
 
 const res = await fetch(`${BACKEND_URL}/auth/login`, {
   

@@ -12,8 +12,7 @@ export default function Register() {
     e.preventDefault();
     setError('');
 
-    // Définition dynamique de l'URL : utilise la variable Vercel ou localhost par défaut
-    const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+    const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://46.224.42.239:5000';
 
     try {
       const res = await fetch(`${BACKEND_URL}/auth/register`, {

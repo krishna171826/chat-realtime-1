@@ -4,18 +4,19 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   
- app.enableCors({
-  origin: true, // Pour être sûr que ça marche tout de suite, 'true' autorise tout
-  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-  credentials: true,
-});
+  // 1. CORS complet pour éviter les erreurs de navigateur
+  app.enableCors({
+    origin: true, // "true" reflète automatiquement l'origine de la requête (très efficace)
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    credentials: true,
+  });
 
-  // On récupère le port de Render (ou 5000 par défaut)
   const port = process.env.PORT || 5000;
 
-  // IMPORTANT : Une seule ligne listen avec le port ET l'adresse '0.0.0.0'
-  await app.listen(port, '0.0.0.0'); 
+  // 2. On retire '0.0.0.0' pour laisser NestJS utiliser 'localhost' par défaut
+  // C'est ce que le tunnel Cloudflare attend.
+  await app.listen(port); 
   
-  console.log(`🚀 Serveur lancé sur le port : ${port}`);
+  console.log(`🚀 Serveur lancé sur : http://localhost:${port}`);
 }
 bootstrap();
