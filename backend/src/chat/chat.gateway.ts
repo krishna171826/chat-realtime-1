@@ -63,4 +63,19 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     
     console.log('✅ Message diffusé immédiatement');
   }
+
+  // À ajouter dans ChatGateway
+
+@SubscribeMessage('typing_start')
+handleTypingStart(@MessageBody() data: { user: string }, @ConnectedSocket() client: any) {
+  // On renvoie l'info à tout le monde sauf à celui qui écrit
+  client.broadcast.emit('typing_to_client', { user: data.user, isTyping: true });
 }
+
+@SubscribeMessage('typing_stop')
+handleTypingStop(@MessageBody() data: { user: string }, @ConnectedSocket() client: any) {
+  client.broadcast.emit('typing_to_client', { user: data.user, isTyping: false });
+}
+
+}
+

@@ -39,6 +39,8 @@ function Navbar() {
           <Link to="/chat" className={`nav-link ${location.pathname === '/chat' ? 'active' : ''}`}>
             Chat
           </Link>
+          <Link to="/git" className="nav-link">Git Info</Link>
+          
 
           <div className="nav-divider"></div>
 

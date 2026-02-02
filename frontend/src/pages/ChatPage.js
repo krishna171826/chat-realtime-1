@@ -9,7 +9,9 @@ function ChatPage() {
   const [message, setMessage] = useState('');
   const [chat, setChat] = useState([]);
   const [userName, setUserName] = useState('');
+  const [typingUser, setTypingUser] = useState(null); // Pour l'indicateur d'écriture
   const messagesEndRef = useRef(null);
+  const typingTimeoutRef = useRef(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -41,23 +43,54 @@ function ChatPage() {
 
     // Écoute des événements Socket
     socket.on('message_history', (history) => setChat(history));
-    socket.on('msg_to_client', (payload) => setChat(prev => [...prev, payload]));
+    socket.on('msg_to_client', (payload) => {
+      setChat(prev => [...prev, payload]);
+      setTypingUser(null); // Arrêter l'indicateur quand un message arrive
+    });
+
+    // Écoute de l'indicateur d'écriture
+    socket.on('typing_to_client', (data) => {
+      if (data.isTyping && data.user !== userName) {
+        setTypingUser(data.user);
+      } else {
+        setTypingUser(null);
+      }
+    });
 
     return () => { 
       socket.off('message_history'); 
       socket.off('msg_to_client');
+      socket.off('typing_to_client');
     };
-  }, [navigate]);
+  }, [navigate, userName]);
 
-  // Scroll automatique vers le bas à chaque nouveau message
+  // Scroll automatique vers le bas
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [chat]);
+  }, [chat, typingUser]);
+
+  // Gérer la saisie et l'événement "typing"
+  const handleInputChange = (e) => {
+    setMessage(e.target.value);
+
+    if (socket) {
+      // Envoyer l'événement "commence à écrire"
+      socket.emit('typing_start', { user: userName });
+
+      // Arrêter l'indicateur après 2 secondes d'inactivité
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      
+      typingTimeoutRef.current = setTimeout(() => {
+        socket.emit('typing_stop', { user: userName });
+      }, 2000);
+    }
+  };
 
   const sendMessage = (e) => {
     e.preventDefault();
     if (message.trim() && socket) {
       socket.emit('msg_to_server', { user: userName, text: message });
+      socket.emit('typing_stop', { user: userName }); // Stop typing à l'envoi
       setMessage('');
     }
   };
@@ -101,13 +134,26 @@ function ChatPage() {
               </div>
             );
           })}
+          
+          {/* Indicateur visuel d'écriture */}
+          {typingUser && (
+            <div className="typing-indicator">
+              <div className="dots">
+                <span className="dot"></span>
+                <span className="dot"></span>
+                <span className="dot"></span>
+              </div>
+              <small>{typingUser} est en train d'écrire...</small>
+            </div>
+          )}
+          
           <div ref={messagesEndRef} />
         </div>
 
         <form onSubmit={sendMessage} className="chat-footer-form">
           <input 
             value={message} 
-            onChange={e => setMessage(e.target.value)} 
+            onChange={handleInputChange} 
             placeholder="Écrivez un message ici..." 
           />
           <button type="submit" className="send-icon-btn">➤</button>

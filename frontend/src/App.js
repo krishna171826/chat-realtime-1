@@ -5,6 +5,7 @@ import Home from './pages/Home';
 import ChatPage from './pages/ChatPage';
 import Register from './pages/Register';
 import Login from './pages/Login';
+import GitResources from './components/GitResources';
 
 function App() {
   return (
@@ -15,9 +16,11 @@ function App() {
         <Route path="/chat" element={<ChatPage />} />
         <Route path="/register" element={<Register />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/git" element={<GitResources />} />
       </Routes>
     </Router>
   );
 }
+
 
 export default App;
