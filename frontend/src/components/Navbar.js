@@ -1,19 +1,20 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import '../styles/Navbar.css';
 
 function Navbar() {
   const navigate = useNavigate();
+  const location = useLocation();
   const token = localStorage.getItem('token');
   const isLoggedIn = !!token;
+  
   let username = '';
   if (isLoggedIn) {
     try {
       const payload = token.split('.')[1];
       username = JSON.parse(atob(payload)).username;
     } catch {
-      username = '';
+      username = 'Utilisateur';
     }
   }
 
@@ -23,69 +24,41 @@ function Navbar() {
   };
 
   return (
-    <nav className="navbar" style={{
-      background: 'linear-gradient(90deg, #232526 0%, #414345 100%)',
-      color: '#fff',
-      padding: '13px 38px',
-      boxShadow: '0 2px 8px rgba(0,0,0,0.18)',
-      borderRadius: 0,
-      marginBottom: 0,
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      width: '100vw',
-      zIndex: 1000
-    }}>
-      <div style={{
-        width: '100%',
-        maxWidth: 1200,
-        margin: '0 auto',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '0 24px'
-      }}>
-        <div className="nav-logo" style={{ fontWeight: 900, fontSize: '1.35rem', letterSpacing: 1, color: '#fff', textShadow: '0 2px 8px rgba(0,0,0,0.10)' }}>💬 Discutez en direct</div>
-        <div className="nav-links" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <Link to="/" style={{
-          color: '#fff',
-          textDecoration: 'none',
-          padding: '7px 18px',
-          borderRadius: 7,
-          fontWeight: 600,
-          transition: 'background 0.2s',
-          marginLeft: 0,
-          background: 'transparent'
-        }}>Accueil</Link>
-        <Link to="/chat" style={{
-          color: '#fff',
-          textDecoration: 'none',
-          padding: '7px 18px',
-          borderRadius: 7,
-          fontWeight: 600,
-          transition: 'background 0.2s',
-          background: 'transparent'
-        }}>Chat</Link>
-        {!isLoggedIn && <Link to="/register" style={{
-          color: '#fff',
-          textDecoration: 'none',
-          padding: '7px 18px',
-          borderRadius: 7,
-          fontWeight: 600,
-          transition: 'background 0.2s',
-          background: 'transparent'
-        }}>Inscription</Link>}
-        {!isLoggedIn && <Link to="/login" style={{
-          color: '#fff',
-          textDecoration: 'none',
-          padding: '7px 18px',
-          borderRadius: 7,
-          fontWeight: 600,
-          transition: 'background 0.2s',
-          background: 'transparent'
-        }}>Connexion</Link>}
-        {isLoggedIn && <span style={{marginLeft: '1.2rem', color: '#fff', fontWeight: 700, fontSize: 16, letterSpacing: 0.5, background: 'rgba(255,255,255,0.08)', borderRadius: 7, padding: '7px 14px'}}>{username}</span>}
-        {isLoggedIn && <button onClick={handleLogout} style={{marginLeft: '1.2rem', background: '#5865f2', color: '#fff', border: 'none', borderRadius: 7, padding: '7px 18px', fontWeight: 700, fontSize: 15, cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.10)', transition: 'background 0.2s'}}>Déconnexion</button>}
+    <nav className="glass-navbar">
+      <div className="nav-container">
+        <Link to="/" className="nav-logo">
+          <span className="logo-icon">💬</span>
+          <span className="logo-text">LiveChat</span>
+        </Link>
+
+        <div className="nav-menu">
+          <Link to="/" className={`nav-item ${location.pathname === '/' ? 'active' : ''}`}>
+            Accueil
+          </Link>
+          <Link to="/chat" className={`nav-item ${location.pathname === '/chat' ? 'active' : ''}`}>
+            Chat
+          </Link>
+          
+          <div className="nav-separator"></div>
+
+          {!isLoggedIn ? (
+            <>
+              <Link to="/login" className="nav-link">Connexion</Link>
+              <Link to="/register" className="nav-btn-primary">Inscription</Link>
+            </>
+          ) : (
+            <div className="user-section">
+              <div className="user-pill">
+                <div className="user-avatar-sm">
+                  {username.charAt(0).toUpperCase()}
+                </div>
+                <span className="username-display">{username}</span>
+              </div>
+              <button onClick={handleLogout} className="logout-icon-btn" title="Déconnexion">
+                ✕
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </nav>
