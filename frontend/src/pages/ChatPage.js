@@ -19,11 +19,12 @@ function ChatPage() {
       return;
     }
     
+    // Extraction du nom d'utilisateur depuis le token
     try {
       const payload = token.split('.')[1];
       const decoded = JSON.parse(atob(payload));
       setUserName(decoded.username);
-    } catch {
+    } catch (e) {
       setUserName('Utilisateur');
     }
 
@@ -31,7 +32,9 @@ function ChatPage() {
     if (!socket) {
       socket = io(backendUrl, { 
         transports: ['websocket'],
-        extraHeaders: { "ngrok-skip-browser-warning": "true" }
+        extraHeaders: {
+          "ngrok-skip-browser-warning": "true"
+        }
       });
     }
 
@@ -56,19 +59,21 @@ function ChatPage() {
     }
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    navigate('/login');
+  };
+
   return (
     <div className="chat-page-wrapper">
       <div className="chat-overlay" />
-      
       <div className="chat-main-container">
         <header className="chat-header-custom">
           <div className="user-info">
             <div className="online-indicator" />
             <span>Connecté : <strong>{userName}</strong></span>
           </div>
-          <button onClick={() => { localStorage.removeItem('token'); navigate('/login'); }} className="logout-button">
-            Quitter
-          </button>
+          <button onClick={handleLogout} className="logout-button">Déconnexion</button>
         </header>
 
         <div className="chat-messages-area">
@@ -76,11 +81,20 @@ function ChatPage() {
             const isMine = m.user === userName;
             return (
               <div key={i} className={`msg-group ${isMine ? 'mine' : 'theirs'}`}>
-                {!isMine && <div className="user-avatar">{m.user?.charAt(0).toUpperCase()}</div>}
+                {!isMine && (
+                  <div className="user-avatar">
+                    {m.user ? m.user.charAt(0).toUpperCase() : '?'}
+                  </div>
+                )}
                 <div className="msg-details">
                   {!isMine && <span className="msg-author">{m.user}</span>}
                   <div className="bubble">{m.text}</div>
                 </div>
+                {isMine && (
+                  <div className="user-avatar" style={{ backgroundColor: '#43b581' }}>
+                    {userName.charAt(0).toUpperCase()}
+                  </div>
+                )}
               </div>
             );
           })}
@@ -91,7 +105,7 @@ function ChatPage() {
           <input 
             value={message} 
             onChange={e => setMessage(e.target.value)} 
-            placeholder="Écrivez un message..." 
+            placeholder="Écrivez un message ici..." 
           />
           <button type="submit" className="send-icon-btn">➤</button>
         </form>
